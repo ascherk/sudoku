@@ -57,20 +57,26 @@ function bruteForceCell ( boxes, boxIndex, cellIndex, row, col ) {
 }
 
 
+// brute force attack on the sudoku
 function bruteForce ( boxes, rows, cols ) {
 	var iterations = 0;
 	
-	while ( emptyCells > 0 && iterations < 1 ) {
+	//while ( emptyCells > 0 && iterations < 1 ) {
 		var counter = 0;
 		var cellCounter = new Array(81);
 
+		// iterate over every empty cell and try every digit. a cell is solved, if there
+		// is only one possible digit
 		for ( boxIndex = 0; boxIndex < boxes.length; boxIndex++) {
 			for ( cellIndex = 0; cellIndex < 9; cellIndex++) {
+
 				// content of the current cell
 				var content = boxes[ boxIndex ][ cellIndex ];
+
 				// id of the current <div>
 				var id = '#' + boxIndex + '_' + cellIndex;
 
+				// which row and column are we in?
 				var row = Math.floor(cellIndex / 3)  + Math.floor( boxIndex / 3 ) * 3;
 				var col = (cellIndex % 3) + ( boxIndex % 3 ) * 3;
 				
@@ -97,7 +103,7 @@ function bruteForce ( boxes, rows, cols ) {
 		}
 		iterations++;
 		console.log(iterations + ' iterations done');
-	}
+	//}
 }
 
 
@@ -119,7 +125,7 @@ function colorMe (boxes) {
 		}
 	}
 	
-	console.log(emptyCells + ' cells are empty.');
+	//console.log(emptyCells + ' cells are empty.');
 }
 
 
@@ -130,7 +136,7 @@ $(document).ready( function(){
 	var html = outer.innerHTML;
 
 
-	// initialize data structures
+	// initialize data structures: these are the 3x3 square boxes starting with index 0 at the top left 
 	var boxes = [ 
 		[ 0,0,0,2,3,0,8,0,0 ] , 
 		[ 5,0,0,0,0,0,0,0,0 ] , 
@@ -143,14 +149,7 @@ $(document).ready( function(){
 		[ 6,2,0,0,0,0,0,0,7 ] , 
 	]
 
-/*
-	boxes = [ 
-		[ 5,0,6,7,4,3,8,2,0 ] , [ 4,0,0,0,0,0,7,3,0 ] , [ 0,9,3,1,5,0,0,6,4 ] ,
-		[ 3,0,0,0,6,5,0,0,0 ] , [ 0,0,9,8,7,0,6,0,0 ] , [ 0,0,0,2,1,0,0,0,7 ] ,
-		[ 6,5,0,0,9,0,1,3,0 ] , [ 0,9,1,0,0,0,5,0,0 ] , [ 0,3,0,0,2,1,0,7,0 ]
-	]
-*/
-
+	// initialize arrays for rows and columns
 	var rows = new Array(9);
 	var cols = new Array(9);
 
@@ -159,7 +158,7 @@ $(document).ready( function(){
 		cols[i] = new Array(9);
 	}
 
-	// draw the grid
+	// draw the grid and populate the row/column arrays
 	for ( boxIndex = 0; boxIndex<9; boxIndex++) {
 		html = html + '<div id="'+boxIndex+'" class="outerCell">';
 		
@@ -177,9 +176,13 @@ $(document).ready( function(){
 		}
 		html = html + '</div>';
 	}
+
 	outer.innerHTML = html;
+	
+	// paint the cells with content green
 	colorMe( boxes );
 
+	/*
 	for (i=0;i<9;i++) {
 		console.log(rows[i].join());
 	}
@@ -187,6 +190,7 @@ $(document).ready( function(){
 	for (i=0;i<9;i++) {
 		console.log(cols[i].join());
 	}
+	*/
 
 	// event 
 	$("#button").click( function(){
