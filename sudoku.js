@@ -5,6 +5,60 @@
 
 emptyCells = 0;
 
+
+
+// Cell object
+function Cell( box, row, col, value ) {
+
+	this.box = box;
+	this.row = row;
+	this.col = col;
+
+	this.solved = false;
+	this.allowedValues = new Array();
+	this.value = value;
+	this.divId = '#' + row + '_' + col;
+
+	if ( this.value >0 ) {
+		this.solved = true;
+	} else {
+		this.solved = false;
+	}	
+		
+	this.display = function () {
+		if ( !this.solved ) {
+			$(this.divId).html( '<p class="tiny">'+this.box+'/'+this.row+'/'+this.col+'</p>' + '<p class="content">'+this.allowedValues.join('/')+'</p>' );
+		} else {
+			$(this.divId).html( '<p class="tiny">'+this.box+'/'+this.row+'/'+this.col+'</p>' + '<p class="content">'+this.value+'</p>' );
+		}
+	}
+		
+	this.findAllowedValues = function(boxes, rows, cols ) {
+		if ( !this.solved ) {
+			for ( search = 1; search <= 9; search++ ) {
+				if ( !foundInBox( boxes[ this.box ], search ) && !foundInRow( rows[this.row] , search ) && !foundInCol( cols[this.col] , search ) ) {
+					this.allowedValues[this.allowedValues.length] = search; 
+				}
+			}
+		}
+	}
+	
+}
+
+function Sudoku() {
+	this.cells = new Array();
+	// initialize here
+	this.addCell = function( index, cell ) {
+		this.cells[index] = cell;
+	}
+	
+	// function to initialize
+	this.paint = function() {
+		//
+	}
+}
+
+
 function foundInBox ( sudokuBox, search ) {
 	for ( index = 0; index < 9; index++ ) {
 		if ( sudokuBox[ index ] == search ) {
@@ -39,17 +93,21 @@ function foundInCol ( sudokuCol, search ) {
 
 function bruteForceCell ( boxes, boxIndex, cellIndex, row, col ) {
 
-	var possibleContentCounter = 0;
-	
+	var allowedContentCounter = 0;
+	var allowedContent = "";
+
 	for ( search = 1; search <= 9; search++ ) {
 		if ( !foundInBox( boxes[ boxIndex ], search ) && !foundInRow( row , search ) && !foundInCol( col , search ) ) {
-			possibleContentCounter++;
-			possibleContent = search; 
+			allowedContentCounter++;
+			//allowedContent = allowedContent + search + ' / '; 
+			allowedContent = search; 
 		}
 	}
 
-	if ( possibleContentCounter == 1 ) {
-		return possibleContent;
+	//return allowedContent;
+
+	if ( allowedContentCounter == 1 ) {
+		return allowedContent;
 	} else { 
 		return -1;
 	}
@@ -89,6 +147,7 @@ function bruteForce ( boxes, rows, cols ) {
 					// cell is empty
 					$(id).addClass("redInnerCell", 1000);
 					bc = bruteForceCell( boxes, boxIndex, cellIndex, rows[row], cols[col] );
+					//if (  bc != "" ) {
 					if (  bc != -1 ) {
 						console.log('heureka ' +id + '/' + bc );
 						rows[row][col] = bc;
@@ -111,10 +170,13 @@ function bruteForce ( boxes, rows, cols ) {
 function colorMe (boxes) {
 	for ( boxIndex = 0; boxIndex < boxes.length; boxIndex++) {
 		for ( cellIndex = 0; cellIndex < 9; cellIndex++) {
+			var row = Math.floor(cellIndex / 3)  + Math.floor( boxIndex / 3 ) * 3;
+			var col = (cellIndex % 3) + ( boxIndex % 3 ) * 3;
+
 			// content of the current cell
 			var content = boxes[ boxIndex ][ cellIndex ];
 			// id of the current <div>
-			var id = '#' + boxIndex + '_' + cellIndex;
+			var id = '#' + row + '_' + col;
 
 			// if the cell is empty try to brute force solve it;
 			if ( content != 0 ) {
@@ -152,7 +214,9 @@ $(document).ready( function(){
 	// initialize arrays for rows and columns
 	var rows = new Array(9);
 	var cols = new Array(9);
-
+	var cells = new Array(81);
+	var sudoku = new Sudoku();
+	
 	for ( i = 0; i<9; i++) {
 		rows[i] = new Array(9);
 		cols[i] = new Array(9);
@@ -163,21 +227,28 @@ $(document).ready( function(){
 		html = html + '<div id="'+boxIndex+'" class="outerCell">';
 		
 		for ( cellIndex = 0; cellIndex<9; cellIndex++) {
-			var id = boxIndex+'_'+cellIndex;
 			var row = Math.floor(cellIndex / 3)  + Math.floor( boxIndex / 3 ) * 3;
 			var col = (cellIndex % 3) + ( boxIndex % 3 ) * 3;
 			var content = boxes[boxIndex][cellIndex];
+			var id = row+'_'+col;
 			rows[row][col] = content;
 			cols[col][row] = content;
+			cells[row*9+col] = new Cell(boxIndex, row, col, content);
+			sudoku.addCell(row*9+col, new Cell(boxIndex, row, col, content));
 			
 			//html = html + '<div id="'+id+'" class="innerCell"><p class="id">' + id + ' / ' + row + ' / ' + col + '</p><p class="content">' + content + '</p></div>';
-			html = html + '<div id="'+id+'" class="innerCell"><p class="content">' + content + '</p></div>';
+			html = html + '<div id="'+id+'" class="innerCell"><p class="content">' + '.' + '</p></div>';
 			counter++;
 		}
 		html = html + '</div>';
 	}
 
 	outer.innerHTML = html;
+
+	for (i=0;i<81;i++) {
+		cells[i].findAllowedValues(boxes, rows, cols);
+		cells[i].display();
+	}
 	
 	// paint the cells with content green
 	colorMe( boxes );
