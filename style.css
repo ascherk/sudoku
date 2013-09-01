@@ -12,14 +12,16 @@
 
 .redInnerCell {
 	background: #af0000;
+	color: white;
+	font-size: 0.8em;
 }
 
-.greenInnerCell {
-	background: #00af00;
+.yellowInnerCell {
+	background: yellow;
 }
 
 .solvedInnerCell {
-	background: yellow;
+	background: green;
 }
 
 .outerCell { 
