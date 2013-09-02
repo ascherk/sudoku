@@ -1,11 +1,7 @@
 // try to solve a sudoku by brute force / try and error
 //
-// check if number 'search' is present in box 'sudokuBox'
-//
 
 emptyCells = 0;
-
-
 
 // Cell object
 function Cell( index, box, row, col, value ) {
@@ -17,7 +13,7 @@ function Cell( index, box, row, col, value ) {
 
 	this.solved = false;
 	this.value = value;
-	this.divId = '#' + row + '_' + col;
+	this.divId = '#' + index;
 
 	if ( this.value > 0 ) {
 		this.solved = true;
@@ -47,8 +43,8 @@ function Cell( index, box, row, col, value ) {
 		$(this.divId).html(html);
 
 		if ( this.solved ) {
-			$(this.divId).removeClass("redInnerCell", 2500);
-			$(this.divId).addClass("yellowInnerCell", 2500);
+			$(this.divId).removeClass("redInnerCell", 500);
+			$(this.divId).addClass("yellowInnerCell", 500);
 		} else {
 			$(this.divId).addClass("redInnerCell", 1000);
 		}
@@ -85,18 +81,23 @@ function Sudoku() {
 
 	this.bruteForceCell = function( index ) {
 		var currentCell = this.cells[ index ];
-		var row = this.rows[ currentCell.row ];
-		var col = this.cols[ currentCell.col ];
 		var box = this.boxes[ currentCell.box ];
 		var av = currentCell.allowedValues;
 		
+		if ( av.length == 1 ) {
+				this.cells[ index ].solved = true;
+				this.cells[ index ].value = av[0];
+				this.cols[currentCell.col][currentCell.row] = av[0];
+				this.rows[currentCell.row][currentCell.col] = av[0];
+				return true;
+		}
 		for ( x=0; x < av.length; x++) {
 			console.log('value to search:'+x+'/'+av[x]);
 			if (!this.findInRow(index, av[x], false) || !this.findInCol(index, av[x], false) ) {
 				this.cells[ index ].solved = true;
 				this.cells[ index ].value = av[x];
-				cols[row] = av[x];
-				rows[col] = av[x];
+				this.cols[currentCell.col][currentCell.row] = av[x];
+				this.rows[currentCell.row][currentCell.col] = av[x];
 				return true;
 			}
 		}
@@ -123,7 +124,8 @@ function Sudoku() {
 				var col = (cellIndex % 3) + ( boxIndex % 3 ) * 3;
 
 				// id of the current <div>
-				var id = '#' + row + '_' + col;
+				var index = row * 9 + col
+				var id = '#' + index;
 				
 				// if the cell is empty try to brute force solve it;
 				if ( content != 0 ) {
@@ -301,13 +303,12 @@ $(document).ready( function(){
 
 	// draw the grid and populate the row/column arrays
 	for ( boxIndex = 0; boxIndex<9; boxIndex++) {
-		html = html + '<div id="'+boxIndex+'" class="outerCell">';
+		html = html + '<div id="box'+boxIndex+'" class="outerCell">';
 		
 		for ( cellIndex = 0; cellIndex<9; cellIndex++) {
 			var row = Math.floor(cellIndex / 3)  + Math.floor( boxIndex / 3 ) * 3;
 			var col = (cellIndex % 3) + ( boxIndex % 3 ) * 3;
 			var content = boxes[boxIndex][cellIndex];
-			var id = row + '_' + col;
 			var index = row*9+col;
 
 			rows[row][col] = content;
@@ -317,7 +318,7 @@ $(document).ready( function(){
 			
 			sudoku.addCell(index, new Cell( index, boxIndex, row, col, content));
 			
-			html = html + '<div id="'+id+'" class="innerCell"></div>';
+			html = html + '<div id="'+index+'" class="innerCell"></div>';
 		}
 
 		html = html + '</div>';
