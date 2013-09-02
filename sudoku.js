@@ -11,7 +11,10 @@ function Cell( index, box, row, col, value ) {
 	this.col = col;
 	this.index = index;
 
+	this.allowedValues = new Array();
+
 	this.solved = false;
+	this.found = 0;
 	this.value = value;
 	this.divId = '#' + index;
 
@@ -21,15 +24,21 @@ function Cell( index, box, row, col, value ) {
 		this.solved = false;
 	}	
 
-	this.findAllowedValues = function(boxes, rows, cols ) {
+	this.findAllowedValues = function(sudoku) {
 		this.allowedValues = new Array();
 		if ( !this.solved ) {
-			for ( search = 1; search <= 9; search++ ) {
-				if ( !foundInBox( boxes[ this.box ], search ) && !foundInRow( rows[this.row] , search ) && !foundInCol( cols[this.col] , search ) ) {
+			for ( var search = 1; search <= 9; search++ ) {
+				if ( !sudoku.findInBox( this.index, search, true ) && !sudoku.findInRow( this.index , search, true ) && !sudoku.findInCol( this.index , search, true ) ) {
 					this.allowedValues[this.allowedValues.length] = search; 
 				}
 			}
+			if (this.allowedValues.length == 1 ) {
+				this.solved = true;
+				this.found = 2;
+				this.value = this.allowedValues[0];
+			}
 		}
+		return this.found;
 	}
 
 	this.display = function () {
@@ -44,7 +53,15 @@ function Cell( index, box, row, col, value ) {
 
 		if ( this.solved ) {
 			$(this.divId).removeClass("redInnerCell", 500);
-			$(this.divId).addClass("yellowInnerCell", 500);
+			if ( this.found == 2 ) {
+				$(this.divId).addClass("dropedInnerCell", 500);
+			} else { 
+				if (this.found == 1 ) {
+					$(this.divId).addClass("solvedInnerCell", 500);
+				} else {
+					$(this.divId).addClass("yellowInnerCell", 500);
+				}
+			}
 		} else {
 			$(this.divId).addClass("redInnerCell", 1000);
 		}
@@ -56,9 +73,6 @@ function Cell( index, box, row, col, value ) {
 //
 function Sudoku() {
 	this.cells = new Array();
-	this.cols = new Array();
-	this.rows = new Array();
-	this.boxes = new Array();
 	
 	// add a cell
 	this.addCell = function( index, cell ) {
@@ -67,98 +81,83 @@ function Sudoku() {
 	
 	// function to paint the current status
 	this.paint = function() {
-		for (i=0; i<this.cells.length; i++ ) {
+		for ( var i=0; i<this.cells.length; i++ ) {
 			this.cells[i].display();
 		}
 	}
 
-
-	this.update = function( boxes, rows, cols ) {
-		this.rows = rows;
-		this.cols = cols;
-		this.boxes = boxes;
-	}
-
 	this.bruteForceCell = function( index ) {
 		var currentCell = this.cells[ index ];
-		var box = this.boxes[ currentCell.box ];
+		//var box = this.boxes[ currentCell.box ];
 		var av = currentCell.allowedValues;
 		
 		if ( av.length == 1 ) {
 				this.cells[ index ].solved = true;
 				this.cells[ index ].value = av[0];
-				this.cols[currentCell.col][currentCell.row] = av[0];
-				this.rows[currentCell.row][currentCell.col] = av[0];
 				return true;
 		}
-		for ( x=0; x < av.length; x++) {
-			console.log('value to search:'+x+'/'+av[x]);
-			if (!this.findInRow(index, av[x], false) || !this.findInCol(index, av[x], false) ) {
+		for ( var x=0; x < av.length; x++) {
+			if ( !this.findInBox(index, av[x], false) || !this.findInRow(index, av[x], false) || !this.findInCol(index, av[x], false) ) {
 				this.cells[ index ].solved = true;
+				this.cells[ index ].found = 1;
 				this.cells[ index ].value = av[x];
-				this.cols[currentCell.col][currentCell.row] = av[x];
-				this.rows[currentCell.row][currentCell.col] = av[x];
 				return true;
 			}
 		}
 		return false;
 	}
 
-	// brute force attack on the sudoku
+	// brute force on the sudoku
 	this.bruteForce = function () {
 		
-		var counter = 0;
-		var cellCounter = new Array(81);
+	}
 
-		// iterate over every empty cell and try every digit. a cell is solved, if there
-		// is only one possible digit
-		for ( boxIndex = 0; boxIndex < boxes.length; boxIndex++) {
-			for ( cellIndex = 0; cellIndex < 9; cellIndex++) {
+	this.slice = function ( box ) {
+		var boxArray = new Array();
+		for ( var i=0; i<81;i++) {
+			if ( this.cells[i].box == box ) {
+				boxArray[boxArray.length] = this.cells[i];
+			}
+		}
+		return boxArray;
+	}
 
-				// content of the current cell
-				var content = boxes[ boxIndex ][ cellIndex ];
+	this.findInBox = function( index, value, solved ) {
+		var found = false;
+		var startIndex = Math.floor( index / 9 ) * 9;
 
-
-				// which row and column are we in?
-				var row = Math.floor(cellIndex / 3)  + Math.floor( boxIndex / 3 ) * 3;
-				var col = (cellIndex % 3) + ( boxIndex % 3 ) * 3;
-
-				// id of the current <div>
-				var index = row * 9 + col
-				var id = '#' + index;
-				
-				// if the cell is empty try to brute force solve it;
-				if ( content != 0 ) {
-					//console.log(content);
-					cellCounter[ counter ] = 1;
+		var currentBox = this.cells[index].box;
+		var boxArray = this.slice(currentBox);
+		
+		for ( var i = 0; i < 9; i++ ) {
+			var c = boxArray[i];
+			if ( c.index != index ) {
+				//check only for already solved cells
+				if ( solved ) {
+					if ( c.solved ) {
+						if ( c.value == value ) {
+							return true;
+						}
+					}
 				} else {
-					cellCounter[ counter ] = 0;
-					// cell is empty
-					$(id).addClass("redInnerCell", 1000);
-					bc = bruteForceCell( boxes, boxIndex, cellIndex, rows[row], cols[col] );
-					//if (  bc != "" ) {
-					if (  bc != -1 ) {
-						console.log('heureka ' +id + '/' + bc );
-						rows[row][col] = bc;
-						cols[col][row] = bc;
-						boxes[boxIndex][cellIndex] = bc;
-						$(id).removeClass("redInnerCell");
-						$(id).addClass("solvedInnerCell");
-						$(id).html('<p class="content">'+bc+'</p>');
+					if ( !c.solved ) {
+						if ( c.allowedValues.indexOf(value) >= 0 ) {
+							return true;
+						}
 					}
 				}
 			}
 		}
+		return found;
 	}
 
 
 	this.findInRow = function( index, value, solved ) {
 		var found = false;
 		var startIndex = Math.floor( index / 9 ) * 9;
-		console.log( index+'/'+startIndex);
 
-		for ( i = startIndex; i < startIndex + 9; i++ ) {
-			c = this.cells[i];
+		for ( var i = startIndex; i < startIndex + 9; i++ ) {
+			var c = this.cells[i];
 			if ( i != index ) {
 				//check only for already solved cells
 				if ( solved ) {
@@ -170,7 +169,6 @@ function Sudoku() {
 				} else {
 					if ( !c.solved ) {
 						if ( c.allowedValues.indexOf(value) >= 0 ) {
-							console.log("row ja");
 							return true;
 						}
 					}
@@ -184,10 +182,9 @@ function Sudoku() {
 	this.findInCol = function( index, value, solved ) {
 		var found = false;
 		var startIndex = index % 9;
-		console.log( index+'/'+startIndex);
 
-		for ( i = startIndex; i < startIndex + 9*9; i +=9 ) {
-			c = this.cells[i];
+		for ( var i = startIndex; i < startIndex + 9*9; i +=9 ) {
+			var c = this.cells[i];
 			if ( i != index ) {
 				//check only for already solved cells
 				if ( solved ) {
@@ -199,7 +196,6 @@ function Sudoku() {
 				} else {
 					if ( !c.solved ) {
 						if ( c.allowedValues.indexOf(value) >= 0 ) {
-							console.log("col ja");
 							return true;
 						}
 					}
@@ -208,84 +204,34 @@ function Sudoku() {
 		}
 		return found;
 	}
-
-
 }
 
 
-function foundInBox ( sudokuBox, search ) {
-	for ( index = 0; index < 9; index++ ) {
-		if ( sudokuBox[ index ] == search ) {
-			//console.log('found ' + search + ' at ' + index );
-			return true;
-		}
-	}
-	return false;
-}
+// initialize data structures: these are the 3x3 square boxes starting with index 0 at the top left 
+boxes = [ 
+	[ 0,0,0,2,3,0,8,0,0 ] , 
+	[ 5,0,0,0,0,0,0,0,0 ] , 
+	[ 1,0,0,0,0,0,0,0,0 ] , 
+	[ 0,0,0,3,0,0,0,0,0 ] , 
+	[ 1,0,6,0,0,0,0,0,0 ] , 
+	[ 5,0,0,0,0,0,0,4,0 ] , 
+	[ 0,0,1,0,0,0,0,0,0 ] , 
+	[ 0,0,0,4,8,0,0,3,0 ] , 
+	[ 6,2,0,0,0,0,0,0,7 ] , 
+]
 
 
-function foundInRow ( sudokuRow, search ) {
-	for ( index = 0; index < 9; index++ ) {
-		if ( sudokuRow[ index ] == search ) {
-			//console.log('found ' + search + ' at ' + index );
-			return true;
-		}
-	}
-	return false;
-}
-
-function foundInCol ( sudokuCol, search ) {
-	for ( index = 0; index < 9; index++ ) {
-		if ( sudokuCol[ index ] == search ) {
-			//console.log('found ' + search + ' at ' + index );
-			return true;
-		}
-	}
-	return false;
-}
-
-
-function bruteForceCell ( boxes, boxIndex, cellIndex, row, col ) {
-
-	var allowedContentCounter = 0;
-	var allowedContent = "";
-
-	for ( search = 1; search <= 9; search++ ) {
-		if ( !foundInBox( boxes[ boxIndex ], search ) && !foundInRow( row , search ) && !foundInCol( col , search ) ) {
-			allowedContentCounter++;
-			//allowedContent = allowedContent + search + ' / '; 
-			allowedContent = search; 
-		}
-	}
-
-	//return allowedContent;
-
-	if ( allowedContentCounter == 1 ) {
-		return allowedContent;
-	} else { 
-		return -1;
-	}
-	
-}
-
-
-	// initialize data structures: these are the 3x3 square boxes starting with index 0 at the top left 
-	boxes = [ 
-		[ 0,0,0,2,3,0,8,0,0 ] , 
-		[ 5,0,0,0,0,0,0,0,0 ] , 
-		[ 1,0,0,0,0,0,0,0,0 ] , 
-		[ 0,0,0,3,0,0,0,0,0 ] , 
-		[ 1,0,6,0,0,0,0,0,0 ] , 
-		[ 5,0,0,0,0,0,0,4,0 ] , 
-		[ 0,0,1,0,0,0,0,0,0 ] , 
-		[ 0,0,0,4,8,0,0,3,0 ] , 
-		[ 6,2,0,0,0,0,0,0,7 ] , 
-	]
-
-	// initialize arrays for rows and columns
-	rows = new Array(9);
-	cols = new Array(9);
-
+boxes = [ 
+	[ 9,0,0,0,3,0,8,0,0 ] , 
+	[ 0,2,0,0,0,0,0,0,0 ] , 
+	[ 0,0,0,7,0,0,0,0,0 ] , 
+	[ 0,0,0,0,6,0,0,0,0 ] , 
+	[ 1,0,6,0,0,0,0,0,0 ] , 
+	[ 5,0,0,0,0,0,0,4,0 ] , 
+	[ 0,0,1,0,0,0,0,0,0 ] , 
+	[ 0,0,0,4,8,0,0,3,0 ] , 
+	[ 6,2,0,0,0,0,0,0,7 ] , 
+]
 
 $(document).ready( function(){
 
@@ -296,61 +242,45 @@ $(document).ready( function(){
 
 	var sudoku = new Sudoku();
 	
-	for ( i = 0; i<9; i++) {
-		rows[i] = new Array(9);
-		cols[i] = new Array(9);
-	}
-
 	// draw the grid and populate the row/column arrays
-	for ( boxIndex = 0; boxIndex<9; boxIndex++) {
+	for ( var boxIndex = 0; boxIndex<9; boxIndex++) {
 		html = html + '<div id="box'+boxIndex+'" class="outerCell">';
 		
-		for ( cellIndex = 0; cellIndex<9; cellIndex++) {
+		for ( var cellIndex = 0; cellIndex<9; cellIndex++) {
 			var row = Math.floor(cellIndex / 3)  + Math.floor( boxIndex / 3 ) * 3;
 			var col = (cellIndex % 3) + ( boxIndex % 3 ) * 3;
 			var content = boxes[boxIndex][cellIndex];
 			var index = row*9+col;
 
-			rows[row][col] = content;
-			cols[col][row] = content;
-			
-			//cells[index] = new Cell(index, boxIndex, row, col, content);
-			
 			sudoku.addCell(index, new Cell( index, boxIndex, row, col, content));
 			
 			html = html + '<div id="'+index+'" class="innerCell"></div>';
 		}
-
 		html = html + '</div>';
 	}
 
 	outer.innerHTML = html;
 
-	for (i=0;i<81;i++) {
-		sudoku.cells[i].findAllowedValues(boxes, rows, cols);
-		//sudoku.cells[i].display();
+	sudoku.paint();
+
+	for (var i=0;i<81;i++) {
+		sudoku.cells[i].findAllowedValues(sudoku);
 	}
 	
-	sudoku.update( boxes, rows, cols );
 	sudoku.paint();
 
 	// event 
 	$("#button").click( function() {
-		if ( sudoku.bruteForceCell(65) ) {
-			for (i=0;i<81;i++) {
-				sudoku.cells[i].findAllowedValues(boxes, rows, cols);
+		for ( var i=0; i<81;i++) {
+			if ( sudoku.bruteForceCell(i) ) {
+				for ( var nurSo = 1; nurSo < 10; nurSo++ ) {
+				for (var i=0;i<81;i++) {
+					sudoku.cells[i].findAllowedValues(sudoku);
+				}
+				}
+				sudoku.paint();
 			}
-			sudoku.paint();
 		}
-
-		if ( sudoku.bruteForceCell(69) ) {
-			for (i=0;i<81;i++) {
-				sudoku.cells[i].findAllowedValues(boxes, rows, cols);
-			}
-			sudoku.paint();
-		}
-			
 	});
-
 });
 
