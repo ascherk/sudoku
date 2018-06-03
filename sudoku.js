@@ -222,15 +222,17 @@ boxes = [
 
 
 boxes = [ 
-	[ 9,0,0,0,3,0,8,0,0 ] , 
-	[ 0,2,0,0,0,0,0,0,0 ] , 
-	[ 0,0,0,7,0,0,0,0,0 ] , 
-	[ 0,0,0,0,6,0,0,0,0 ] , 
-	[ 1,0,6,0,0,0,0,0,0 ] , 
-	[ 5,0,0,0,0,0,0,4,0 ] , 
-	[ 0,0,1,0,0,0,0,0,0 ] , 
-	[ 0,0,0,4,8,0,0,3,0 ] , 
-	[ 6,2,0,0,0,0,0,0,7 ] , 
+	[ 0,4,0, 0,3,0, 6,0,0 ] , 
+	[ 1,5,0, 0,6,0, 0,0,0 ] , 
+	[ 0,8,3, 5,0,0, 0,0,9 ] , 
+
+	[ 0,5,0, 1,0,0, 0,0,0 ] , 
+	[ 0,1,0, 7,3,8, 0,0,0 ] , 
+	[ 0,0,8, 0,0,2, 0,6,0 ] , 
+
+	[ 5,0,0, 0,0,4, 8,6,0 ] , 
+	[ 6,0,0, 5,8,0, 0,2,4 ] , 
+	[ 0,0,4, 0,7,0, 0,9,0 ] , 
 ]
 
 $(document).ready( function(){
@@ -270,13 +272,16 @@ $(document).ready( function(){
 	sudoku.paint();
 
 	// event 
+	iii=0;
 	$("#button").click( function() {
+		iii++;
+		console.log(iii);
 		for ( var i=0; i<81;i++) {
 			if ( sudoku.bruteForceCell(i) ) {
-				for ( var nurSo = 1; nurSo < 10; nurSo++ ) {
-				for (var i=0;i<81;i++) {
-					sudoku.cells[i].findAllowedValues(sudoku);
-				}
+				for ( var nurSo = 1; nurSo < 20; nurSo++ ) {
+					for (var i=0;i<81;i++) {
+						sudoku.cells[i].findAllowedValues(sudoku);
+					}
 				}
 				sudoku.paint();
 			}
